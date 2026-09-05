@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Download, Eye, FileText, Printer, Trash2, Search } from "lucide-react";
 import { api } from "../api";
-import { Badge, PageHead, Modal, GrowthTimeline, Loading, exportCSV, stageTone, ORDER_STAGES, ORDER_TYPES } from "../components/ui";
+import { Badge, PageHead, Modal, GrowthTimeline, Loading, exportExcel, RowCheckbox, stageTone, ORDER_STAGES, ORDER_TYPES } from "../components/ui";
 
 const emptyOrder = { name: "", phone: "", nid: "", address: "", postal: "", type: ORDER_TYPES[0], product: "", sendDate: "", deposit: "", total: "" };
 
@@ -18,6 +18,7 @@ export default function Orders({ user }) {
   const [filterType, setFilterType] = useState("همه");
   const [form, setForm] = useState(emptyOrder);
   const [err, setErr] = useState("");
+  const [selected, setSelected] = useState(() => new Set());
 
   const load = () => api.listOrders().then(setOrders).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
@@ -29,6 +30,41 @@ export default function Orders({ user }) {
       if (!q) return true;
       return [o.name, o.phone, o.product, o.trackingCode].some((v) => (v || "").toLowerCase().includes(q));
     });
+
+  const toggleSelected = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((o) => selected.has(o.id));
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      if (allFilteredSelected) {
+        const next = new Set(prev);
+        filtered.forEach((o) => next.delete(o.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filtered.forEach((o) => next.add(o.id));
+      return next;
+    });
+  };
+
+  const exportOrders = () => {
+    const rows = filtered.filter((o) => selected.size === 0 || selected.has(o.id));
+    exportExcel(
+      "orders.xlsx",
+      rows.map(({ id, ...r }) => ({
+        مشتری: r.name, تلفن: r.phone, "نوع سفارش": r.type, محصول: r.product,
+        "زمان ارسال": r.sendDate, بیعانه: r.deposit, "مبلغ کل": r.total,
+        وضعیت: ORDER_STAGES[r.stage], "کد رهگیری": r.trackingCode, "ثبت‌شده توسط": r.registeredBy,
+      })),
+      "سفارش‌ها"
+    );
+  };
 
   const addOrder = async () => {
     setErr("");
@@ -47,6 +83,7 @@ export default function Orders({ user }) {
       await api.deleteOrder(o.id);
       setOrders((os) => os.filter((x) => x.id !== o.id));
       setDetail((d) => (d?.id === o.id ? null : d));
+      setSelected((prev) => { const next = new Set(prev); next.delete(o.id); return next; });
     } catch (err) { alert(err.message); }
   };
 
@@ -75,17 +112,18 @@ export default function Orders({ user }) {
               <option>همه</option>
               {ORDER_TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
-            <button className="btn btn-ghost" onClick={() => exportCSV("orders.csv", filtered.map(({ id, ...r }) => r))}><Download size={14} />خروجی اکسل</button>
+            <button className="btn btn-ghost" onClick={exportOrders}><Download size={14} />خروجی اکسل{selected.size > 0 ? ` (${selected.size})` : ""}</button>
             <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={14} />ثبت سفارش جدید</button>
           </div>
         } />
 
       <div className="cmd-table-wrap">
         <table className="cmd-table">
-          <thead><tr><th>مشتری</th><th>نوع سفارش</th><th>محصول</th><th>زمان ارسال</th><th>مبلغ کل</th><th>وضعیت</th><th>کد رهگیری</th><th></th></tr></thead>
+          <thead><tr><th style={{ width: 34 }}><RowCheckbox checked={allFilteredSelected} onChange={toggleSelectAll} /></th><th>مشتری</th><th>نوع سفارش</th><th>محصول</th><th>زمان ارسال</th><th>مبلغ کل</th><th>وضعیت</th><th>کد رهگیری</th><th></th></tr></thead>
           <tbody>
             {filtered.map((o) => (
               <tr key={o.id}>
+                <td><RowCheckbox checked={selected.has(o.id)} onChange={() => toggleSelected(o.id)} /></td>
                 <td>{o.name}</td>
                 <td><Badge tone="gray">{o.type}</Badge></td>
                 <td style={{ whiteSpace: "normal", maxWidth: 200 }}>{o.product}</td>
@@ -110,7 +148,7 @@ export default function Orders({ user }) {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={8} className="cmd-empty">سفارشی ثبت نشده</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={9} className="cmd-empty">سفارشی ثبت نشده</td></tr>}
           </tbody>
         </table>
       </div>

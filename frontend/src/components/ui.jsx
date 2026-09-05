@@ -1,5 +1,6 @@
 import React from "react";
 import { X, Sprout, Leaf, Package, Truck, BadgeCheck } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export const ROLES = {
   admin: "سازنده",
@@ -62,6 +63,27 @@ export function exportCSV(filename, rows) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// Real .xlsx export (SheetJS) — filename should end in .xlsx
+export function exportExcel(filename, rows, sheetName = "Sheet1") {
+  if (!rows || !rows.length) return;
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  XLSX.writeFile(workbook, filename, { bookType: "xlsx" });
+}
+
+// Checkbox for row-selection tables/cards
+export const RowCheckbox = ({ checked, onChange }) => (
+  <input
+    type="checkbox"
+    checked={checked}
+    onClick={(e) => e.stopPropagation()}
+    onChange={onChange}
+    style={{ width: 16, height: 16, cursor: "pointer" }}
+  />
+);
+
 
 export const Modal = ({ title, onClose, children, width }) => (
   <div className="cmd-overlay" onClick={onClose}>

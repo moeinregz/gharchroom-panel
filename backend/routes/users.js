@@ -51,7 +51,6 @@ router.delete("/:id", requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
   const user = db.users.find((u) => u.id === id);
   if (!user) return res.status(404).json({ error: "کاربر یافت نشد" });
-  if (user.role === "admin") return res.status(400).json({ error: "امکان حذف حساب سازنده وجود ندارد" });
 
   db.users = db.users.filter((u) => u.id !== id);
   await saveDB(db);

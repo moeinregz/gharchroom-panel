@@ -51,7 +51,7 @@ export default function Team({ user }) {
                   <div style={{ fontSize: 11.5, color: "var(--text-faint)" }}>{e.position}</div>
                 </div>
               </div>
-              {isAdmin && e.role !== "admin" && (
+              {isAdmin && (
                 <button className="btn btn-sm btn-danger" onClick={() => removeEmployee(e)} title="حذف عضو"><Trash2 size={13} /></button>
               )}
             </div>
