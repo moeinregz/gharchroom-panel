@@ -1,0 +1,7 @@
+node_modules/
+.env
+backend/data/db.json
+backend/uploads/chat/*
+!backend/uploads/chat/.gitkeep
+dist/
+.DS_Store
