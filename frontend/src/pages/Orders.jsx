@@ -3,7 +3,7 @@ import { Plus, Download, Eye, FileText, Printer, Trash2, Search } from "lucide-r
 import { api } from "../api";
 import { Badge, PageHead, Modal, GrowthTimeline, Loading, exportExcel, RowCheckbox, stageTone, ORDER_STAGES, ORDER_TYPES } from "../components/ui";
 
-const emptyOrder = { name: "", phone: "", nid: "", address: "", postal: "", type: ORDER_TYPES[0], product: "", sendDate: "", deposit: "", total: "" };
+const emptyOrder = { name: "", phone: "", nid: "", address: "", postal: "", type: [], product: "", sendDate: "", deposit: "", total: "" };
 
 export default function Orders({ user }) {
   const isAdmin = user?.role === "admin";
@@ -24,7 +24,7 @@ export default function Orders({ user }) {
   useEffect(() => { load(); }, []);
 
   const filtered = orders
-    .filter((o) => filterType === "همه" || o.type === filterType)
+    .filter((o) => filterType === "همه" || (o.type || "").includes(filterType))
     .filter((o) => {
       const q = search.trim().toLowerCase();
       if (!q) return true;
@@ -68,9 +68,9 @@ export default function Orders({ user }) {
 
   const addOrder = async () => {
     setErr("");
-    if (!form.name.trim() || !form.phone.trim()) return;
+    if (!form.name.trim() || !form.phone.trim() || form.type.length === 0) return;
     try {
-      const o = await api.createOrder(form);
+      const o = await api.createOrder({ ...form, type: form.type.join("، ") });
       setOrders((os) => [o, ...os]);
       setShowForm(false);
       setForm(emptyOrder);
@@ -166,10 +166,26 @@ export default function Orders({ user }) {
           </div>
           <div className="field"><label>آدرس</label><textarea className="textarea" style={{ minHeight: 56 }} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
           <div className="field-row">
-            <div className="field"><label>نوع سفارش</label>
-              <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                {ORDER_TYPES.map((t) => <option key={t}>{t}</option>)}
-              </select>
+            <div className="field">
+              <label>نوع سفارش (می‌توانید چند مورد را با هم انتخاب کنید)</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 4 }}>
+                {ORDER_TYPES.map((t) => (
+                  <label key={t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={form.type.includes(t)}
+                      onChange={(e) => {
+                        setForm((f) => ({
+                          ...f,
+                          type: e.target.checked ? [...f.type, t] : f.type.filter((x) => x !== t),
+                        }));
+                      }}
+                      style={{ width: 15, height: 15 }}
+                    />
+                    {t}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="field"><label>نام محصول</label><input className="input" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} /></div>
           </div>
@@ -178,7 +194,7 @@ export default function Orders({ user }) {
             <div className="field"><label>مقدار بیعانه (تومان)</label><input className="input" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} /></div>
           </div>
           <div className="field"><label>هزینه کل (تومان)</label><input className="input" value={form.total} onChange={(e) => setForm({ ...form, total: e.target.value })} /></div>
-          <button className="btn btn-primary btn-block" onClick={addOrder}>ثبت سفارش و صدور کد رهگیری</button>
+          <button className="btn btn-primary btn-block" onClick={() => { if (form.type.length === 0) { setErr("حداقل یک نوع سفارش را انتخاب کنید"); return; } addOrder(); }}>ثبت سفارش و صدور کد رهگیری</button>
         </Modal>
       )}
 

@@ -12,7 +12,7 @@ export const ROLES = {
   customer: "مشتری",
 };
 
-export const ORDER_STAGES = ["ثبت سفارش", "در حال آماده‌سازی", "بسته‌بندی و کنترل کیفیت", "ارسال شده", "تحویل داده‌شده"];
+export const ORDER_STAGES = ["ثبت سفارش", "تایید سفارش", "ارسال از مبدا", "به مقصد رسید", "تحویل داده شد"];
 export const ORDER_TYPES = ["کمپوست", "خاک پوششی", "محصولات صنعتی", "بسته‌بندی"];
 export const stageTone = (stage) => ["gray", "blue", "amber", "blue", "green"][stage] || "gray";
 
